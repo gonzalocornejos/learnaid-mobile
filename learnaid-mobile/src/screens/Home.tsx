@@ -76,7 +76,12 @@ export default function Home() {
   };
 
   const handleSendText = async (text: any) =>{
-          const response = await ky.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`)
+          const response = await ky.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,
+          {
+            headers:{
+              'response-type': 'blob',
+            },
+          })
           .then((response: KyResponse) => {
             response.blob() 
             .then((blob: Blob) => {   
@@ -151,20 +156,16 @@ export default function Home() {
 
   const handleReproducir = async () => {
       console.log('entro1');
-      if(audio){
         try{
-          createFile(audio);
           var sound = new Audio.Sound();
           console.log('Loading Sound');
-          await sound.loadAsync(require('./audio.mp3'));
-          setSound(sound);
+          await sound.loadAsync(require('../../assets/output.mp3'));
 
           console.log('Playing Sound');
           await sound.playAsync();
         } catch (e) {
           console.log('Error', e)
         }
-      }
   }
 
   return (
