@@ -22,6 +22,7 @@ import {StyleSheet} from 'react-native';
 import axios from 'axios';
 import ky, { KyResponse } from 'ky';
 import { Audio } from 'expo-av';
+import { responseTypes } from 'ky/distribution/core/constants';
 
 export const backgroundUrl = '../../assets/background.png';
 
@@ -76,19 +77,18 @@ export default function Home() {
   };
 
   const handleSendText = async (text: any) =>{
-          const response = await ky.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,
+    /*const response = await ky.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,
           {
             headers:{
               'response-type': 'blob',
             },
-          })
-          .then((response: KyResponse) => {
-            response.blob() 
-            .then((blob: Blob) => {   
-              console.log(blob);        
-              setAudio(blob);
-              console.log(audio);
-            })
+            
+          })*/
+
+    const response = await axios.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,{responseType: 'blob'})
+          .then((response: any) => {
+            console.log(response)
+            setAudio(response);
           })
           .catch((err) => {
             console.log(err);
