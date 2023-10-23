@@ -41,7 +41,11 @@ export const backwardIconUrl = '../../assets/backwardIcon.png';
 export default function Home() {
   const [dataText, setDataText] = useState("");
   const [audio, setAudio] = useState<any | null>();
-  const [sound, setSound] = useState<any | null>();
+  const sound = useRef(new Audio.Sound());
+
+  const [Loaded, SetLoaded] = React.useState(false);
+  const [Loading, SetLoading] = React.useState(false);
+
   const [tamañoTexto, setTamañoTexto] = useState(25);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
@@ -62,6 +66,8 @@ export default function Home() {
       const cameraStatus = await Camera.requestCameraPermissionsAsync();
       setHasCameraPermission(cameraStatus.status === 'granted');
     };
+
+    
   }, []);
 
   const takePicture = async () => {
@@ -88,7 +94,12 @@ export default function Home() {
     const response = await axios.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,{responseType: 'blob'})
           .then((response: any) => {
             console.log(response)
-            setAudio(response);
+            setAudio(response.config.url);
+            console.log('Loading Sound');
+            var source = {
+              uri: response.config.url,
+            }
+            LoadAudio(source);
           })
           .catch((err) => {
             console.log(err);
@@ -156,17 +167,46 @@ export default function Home() {
 
   const handleReproducir = async () => {
       console.log('entro1');
+      console.log(audio)
         try{
-          var sound = new Audio.Sound();
-          console.log('Loading Sound');
-          await sound.loadAsync(require('../../assets/output.mp3'));
+          
+          
+          const result = await sound.current.getStatusAsync();
+          if (result.isLoaded) {
+            if (result.isPlaying === false) {
+              sound.current.playAsync();
+            } else {
+              sound.current.pauseAsync();
+            }
 
-          console.log('Playing Sound');
-          await sound.playAsync();
+          }
+          
         } catch (e) {
           console.log('Error', e)
         }
   }
+
+  const LoadAudio = async (source: any) => {
+    SetLoading(true);
+    const checkLoading = await sound.current.getStatusAsync();
+    if (checkLoading.isLoaded === false) {
+      try {
+        const result = await sound.current.loadAsync(source, {}, true);
+        if (result.isLoaded === false) {
+          SetLoading(false);
+          console.log('Error in Loading Audio');
+        } else {
+          SetLoading(false);
+          SetLoaded(true);
+        }
+      } catch (error) {
+        console.log(error);
+        SetLoading(false);
+      }
+    } else {
+      SetLoading(false);
+    }
+  };
 
   return (
     <>
