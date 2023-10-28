@@ -23,12 +23,9 @@ function RootNavigator() {
               headerShown: true,
               headerTitleStyle: {color: 'orange'},
               headerTitleAlign: 'center',
-              headerBackground: () => (
-                <ImageBackground
-                  style={{width: '100%', height: '100%'}}
-                  source={require('../../assets/background.png')}
-                />
-              ),
+              headerStyle:{
+                backgroundColor:'white'
+              }
             }}
           />
             

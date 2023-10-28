@@ -1,574 +1,628 @@
 import {
-  Box,
-  Button,
-  Card,
-  Center,
-  HStack,
-  Image,
-  ScrollView,
-  Text,
-  VStack,
-  View,
-} from 'native-base';
-import React, {useEffect, useRef, useState} from 'react';
-import {
-  Alert,
-  ImageBackground,
-  Modal,
-} from 'react-native';
-import {Camera, CameraType, FlashMode} from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
-import {StyleSheet} from 'react-native';
-import axios from 'axios';
-import ky, { KyResponse } from 'ky';
-import { Audio } from 'expo-av';
-import { responseTypes } from 'ky/distribution/core/constants';
+    Box,
+    Button,
+    Card,
+    Center,
+    HStack,
+    Icon,
+    Image,
+    ScrollView,
+    Text,
+    ThreeDotsIcon,
+    VStack,
+    View,
+} from "native-base";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, ImageBackground, Modal } from "react-native";
+import { Camera, CameraType, FlashMode } from "expo-camera";
+import * as MediaLibrary from "expo-media-library";
+import { StyleSheet } from "react-native";
+import axios from "axios";
+import ky, { KyResponse } from "ky";
+import { Audio } from "expo-av";
+import { responseTypes } from "ky/distribution/core/constants";
 
-export const backgroundUrl = '../../assets/background.png';
+export const backgroundUrl = "../../assets/background.png";
 
-export const textLogoUrl = '../../assets/learn-aid-text-logo.png';
+export const textLogoUrl = "../../assets/learn-aid-text-logo.png";
 
-export const cameraIconUrl = '../../assets/cameraIcon.png';
+export const cameraIconUrl = "../../assets/cameraIcon.png";
 
-export const settingsIconUrl = '../../assets/settingsIcon.png';
+export const settingsIconUrl = "../../assets/settingsIcon.png";
 
-export const addIconUrl = '../../assets/addIcon.png';
+export const addIconUrl = "../../assets/addIcon.png";
 
-export const forwardIconUrl = '../../assets/forwardIcon.png';
+export const forwardIconUrl = "../../assets/forwardIcon.png";
 
-export const backwardIconUrl = '../../assets/backwardIcon.png';
+export const backwardIconUrl = "../../assets/backwardIcon.png";
+
 
 export default function Home() {
-  const [dataText, setDataText] = useState("");
-  const [audio, setAudio] = useState<any | null>();
-  const sound = useRef(new Audio.Sound());
+    const [dataText, setDataText] = useState("");
+    const [audio, setAudio] = useState<any | null>();
+    const sound = useRef(new Audio.Sound());
 
-  const [Loaded, SetLoaded] = React.useState(false);
-  const [Loading, SetLoading] = React.useState(false);
+    const [loaded, setLoaded] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [internalLoading, setInternalLoading] = React.useState(false)
 
-  const [tamañoTexto, setTamañoTexto] = useState(25);
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+    const [tamañoTexto, setTamañoTexto] = useState(25);
+    const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  const [image, setImage] = useState<any | null>();
-  const [type, setType] = useState(CameraType.back);
-  const [flash, setFlash] = useState(FlashMode.off);
-  const [play, setPlay] = useState(false);
-  const cameraRef = useRef(null);
+    const [cameraOpen, setCameraOpen] = useState(false);
+    const [hasCameraPermission, setHasCameraPermission] = useState(false);
+    const [image, setImage] = useState<any | null>();
+    const [type, setType] = useState(CameraType.back);
+    const [flash, setFlash] = useState(FlashMode.off);
+    const [play, setPlay] = useState(false);
+    const cameraRef = useRef(null);
 
-  useEffect(() => {
-    const fetchData = async () => {};
-    fetchData();
+    useEffect(() => {
+        const fetchData = async () => {};
+        fetchData();
+        const getPermissions = async () => {
+            MediaLibrary.requestPermissionsAsync();
+            const cameraStatus = await Camera.requestCameraPermissionsAsync();
+            setHasCameraPermission(cameraStatus.status === "granted");
+        };
+    }, []);
 
-    const getPermissions = async () => {
-      MediaLibrary.requestPermissionsAsync();
-      const cameraStatus = await Camera.requestCameraPermissionsAsync();
-      setHasCameraPermission(cameraStatus.status === 'granted');
+    const takePicture = async () => {
+        if (cameraRef) {
+            try {
+                const data = await cameraRef.current.takePictureAsync();
+                console.log("DATA: ", data);
+                setImage(data);
+            } catch (e) {
+                console.log("Exception error: ", e);
+            }
+        }
     };
 
-    
-  }, []);
-
-  const takePicture = async () => {
-    if (cameraRef) {
-      try {
-        const data = await cameraRef.current.takePictureAsync();
-        console.log('DATA: ', data);
-        setImage(data);
-      } catch (e) {
-        console.log('Exception error: ', e);
-      }
-    }
-  };
-
-  const handleSendText = async (text: any) =>{
-    /*const response = await ky.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,
+    const handleSendText = async (text: any) => {
+        /*const response = await ky.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,
           {
             headers:{
               'response-type': 'blob',
             },
             
           })*/
+        const response = await axios
+            .get(
+                `https://2l96ld3r-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,
+                { responseType: "blob" }
+            )
+            .then((response: any) => {
+                console.log(JSON.stringify(response));
+                setAudio(response.config.url);
+                console.log("Loading Sound");
+                var source = {
+                    uri: response.config.url,
+                };
+                loadAudio(source);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    };
 
-    const response = await axios.get(`https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-audio/${text}`,{responseType: 'blob'})
-          .then((response: any) => {
-            console.log(response)
-            setAudio(response.config.url);
-            console.log('Loading Sound');
-            var source = {
-              uri: response.config.url,
-            }
-            LoadAudio(source);
-          })
-          .catch((err) => {
-            console.log(err);
-          })
-};
-          
-
-  const handleSendImage = async (image: any) => {
-    const formData = new FormData();
-    formData.append('Imagen', {
-      uri: image.uri,
-      name: 'imagen.jpg',
-      type: 'image/jpeg', // Cambiado a 'jpeg' según la extensión típica de una imagen
-    });
-    try {
-      var response = axios
-        .postForm(
-          'https://rzpxn389-5261.brs.devtunnels.ms/api/v1/Mobile/generar-texto',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          },
-        )
-        .then(response => {
-          console.log('RESPUESTA IMAGEN: ', response.data);
-          setDataText(response.data);
-          handleSendText(response.data);
-        })
-        .catch(err => {
-          console.log('CATCH ERROR: ', err);
+    const handleSendImage = async (image: any) => {
+        setInternalLoading(true)
+        const formData = new FormData();
+        formData.append("Imagen", {
+            uri: image.uri,
+            name: "imagen.jpg",
+            type: "image/jpeg", // Cambiado a 'jpeg' según la extensión típica de una imagen
         });
-      //const response = await ky.post('https://localhost:7261/api/v1/Usuarios/crear-usuario', {
-      //    headers: {"Content-Type": "multipart/form-data"},
-      //    body: formData
-      //});
+        try {
+            var response = axios
+                .postForm(
+                    "https://2l96ld3r-5261.brs.devtunnels.ms/api/v1/Mobile/generar-texto",
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    }
+                )
+                .then((response) => {
+                    console.log("RESPUESTA IMAGEN: ", JSON.stringify(response.data));
+                    setDataText(response.data);
+                    handleSendText(response.data);
+                    setInternalLoading(false)
+                })
+                .catch((err) => {
+                    console.log("CATCH ERROR: ", err);
+                });
+            //const response = await ky.post('https://localhost:7261/api/v1/Usuarios/crear-usuario', {
+            //    headers: {"Content-Type": "multipart/form-data"},
+            //    body: formData
+            //});
 
-      //console.log('RESPUESTA: ', response);
-      // Manejar la respuesta del POST
-    } catch (error) {
-      console.log('ERROR AL PROCESAR LA IMAGEN:', error);
-    }
-  };
+            //console.log('RESPUESTA: ', response);
+            // Manejar la respuesta del POST
+        } catch (error) {
+            console.log("ERROR AL PROCESAR LA IMAGEN:", error);
+            setInternalLoading(false)
+        }
+    };
 
-  /* if (hasCameraPermission === false) {
+    /* if (hasCameraPermission === false) {
     return <Text>No tienes acceso a la cámara con esta aplicación</Text>;
   }*/
-  const getPermissions = async () => {
-    MediaLibrary.requestPermissionsAsync();
-    const cameraStatus = await Camera.requestCameraPermissionsAsync();
-    setHasCameraPermission(cameraStatus.status === 'granted');
-  };
+    const getPermissions = async () => {
+        MediaLibrary.requestPermissionsAsync();
+        const cameraStatus = await Camera.requestCameraPermissionsAsync();
+        setHasCameraPermission(cameraStatus.status === "granted");
+    };
 
-  const handleCameraOpen = async () => {
-    if (!hasCameraPermission) {
-      await getPermissions();
-    }
-    setCameraOpen(true);
-  }
+    const handleCameraOpen = async () => {
+        if (!hasCameraPermission) {
+            await getPermissions();
+        }
+        setCameraOpen(true);
+    };
 
-  const createFile = (file: any) => {
-    new File(file, "audio.mp3")
-  }
+    const createFile = (file: any) => {
+        new File(file, "audio.mp3");
+    };
 
-  const handleReproducir = async () => {
-      console.log('entro1');
-      console.log(audio)
-        try{
-          
-          
-          const result = await sound.current.getStatusAsync();
-          if (result.isLoaded) {
-            if (result.isPlaying === false) {
-              sound.current.playAsync();
-            } else {
-              sound.current.pauseAsync();
+    const handleReproducir = async () => {
+        setPlay(!play)
+        console.log("entro1");
+        console.log(audio);
+        try {
+            const result = await sound.current.getStatusAsync();
+            if (result.isLoaded) {
+                if (result.isPlaying === false) {
+                    sound.current.playAsync();
+                } else {
+                    sound.current.pauseAsync();
+                }
             }
-
-          }
-          
         } catch (e) {
-          console.log('Error', e)
+            console.log("Error", e);
         }
-  }
+    };
 
-  const LoadAudio = async (source: any) => {
-    SetLoading(true);
-    const checkLoading = await sound.current.getStatusAsync();
-    if (checkLoading.isLoaded === false) {
-      try {
-        const result = await sound.current.loadAsync(source, {}, true);
-        if (result.isLoaded === false) {
-          SetLoading(false);
-          console.log('Error in Loading Audio');
+    const loadAudio = async (source: any) => {
+        setLoading(true);
+        const checkLoading = await sound.current.getStatusAsync();
+        if (checkLoading.isLoaded === false) {
+            try {
+                const result = await sound.current.loadAsync(source, {}, true);
+                if (result.isLoaded === false) {
+                    setLoading(false);
+                    console.log("Error in Loading Audio");
+                } else {
+                    setLoading(false);
+                    setLoaded(true);
+                }
+            } catch (error) {
+                console.log(error);
+                setLoading(false);
+            }
         } else {
-          SetLoading(false);
-          SetLoaded(true);
+            setLoading(false);
         }
-      } catch (error) {
-        console.log(error);
-        SetLoading(false);
-      }
-    } else {
-      SetLoading(false);
-    }
-  };
+    };
 
-  return (
-    <>
-      <View style={{flex: 1, backgroundColor: 'white'}}>
-        {/* Imagen de fondo */}
-        <ImageBackground
-          source={require('../../assets/background.png')}
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-          alt="icon.png">
-          <VStack
-            style={{
-              flex: 1,
-              padding: 10,
-              paddingLeft: '5%',
-            }}
-            space={5}>
-            <ScrollView
-              contentContainerStyle={{flexGrow: 1}}
-              showsVerticalScrollIndicator={false}>
-              <Card
-                style={{
-                  borderRadius: 0,
-                  height: '100%',
-                }}>
-                <Text
-                  fontSize={tamañoTexto + 'px'}
-                  textAlign={'justify'}
-                  bold
-                  color={'black'}
-                  style={{textShadowColor: 'black'}}
-                  p={5}>
-                  {dataText}
-                </Text>
-              </Card>
-            </ScrollView>
-            <HStack
-              justifyContent={'center'}
-              space={'10%'}
-              height={'20%'}
-              p={'5%'}
-              paddingBottom={'10%'}>
-              <Button
-                width={'30%'}
-                height={'100%'}
-                style={{
-                  bottom: '-15%',
-                  right: '-2.5%',
-                  backgroundColor: 'orange',
-                }}
-                onPress={() => {
-                  setSettingsModalVisible(true);
-                }}>
-                <Center>
-                  <Image
-                    source={require('../../assets/settingsIcon.png')}
-                    style={{
-                      width: '100%',
-                      height: '65%',
-                    }}
-                    alt="icon.png"
-                  />
-                  <Text color={'black'}>Ajustes</Text>
-                </Center>
-              </Button>
-              <Button
-                width={'30%'}
-                height={'100%'}
-                style={{backgroundColor: 'lightblue'}}
-                onPress={() => handleCameraOpen()}>
-                <Center>
-                  <Image
-                    source={require('../../assets/cameraIcon.png')}
-                    style={{
-                      width: '100%',
-                      height: '63%',
-                    }}
-                    alt="icon.png"
-                  />
-                  <Text color={'black'} fontSize={15}>
-                    Cámara
-                  </Text>
-                </Center>
-              </Button>
-              <Button
-                width={'30%'}
-                height={'100%'}
-                style={{
-                  bottom: '-15%',
-                  left: '-2.5%',
-                  backgroundColor: 'orange',
-                }}
-                shadow={20}>
-                <Center>
-                  <Image
-                    source={require('../../assets/addIcon.png')}
-                    style={{
-                      width: '80%',
-                      height: '60%',
-                    }}
-                    alt="icon.png"
-                  />
-                  <Text color={'black'} fontSize={'15px'}>
-                    Agregar
-                  </Text>
-                </Center>
-              </Button>
-            </HStack>
-            <HStack space={5}>
-              <Button
-                width={'30%'}
-                height={'100%'}
-                background={'white'}
-                onPress={() => {
-                  ('');
-                }}>
-                <Center>
-                  <Text color={'black'} fontSize={17}>
-                    Atrasar
-                  </Text>
-                </Center>
-              </Button>
-              <Button
-                width={'30%'}
-                height={'100%'}
-                background={'black'}
-                onPress={() => handleReproducir()}>
-                <Center>
-                  <Text color={'white'} fontSize={17}>
-                    {!play ? 'Reproducir' : 'Pausar'}
-                  </Text>
-                </Center>
-              </Button>
-              <Button
-                width={'30%'}
-                height={'100%'}
-                background={'white'}
-                onPress={() => {}}>
-                <Center>
-                  <Text color={'black'} fontSize={17}>
-                    Adelantar
-                  </Text>
-                </Center>
-              </Button>
-            </HStack>
-          </VStack>
-        </ImageBackground>
-      </View>
-      {/*MODAL SETTINGS*/}
-      <Modal visible={settingsModalVisible}>
-        <View style={{flex: 1}}>
-          <ImageBackground
-            source={require('../../assets/background.png')}
-            style={{
-              width: '100%',
-              height: '100%',
-            }}
-            alt="icon.png">
-            <VStack
-              style={{
-                flex: 1,
-                padding: 10,
-                paddingLeft: '5%',
-              }}
-              space={5}>
-              <Box
-                style={{
-                  width: '100%',
-                  height: '10%',
-                }}>
+    return (
+        <>
+            <View style={{ flex: 1, backgroundColor: "white" }}>
+                {/* Imagen de fondo */}
                 <ImageBackground
-                  source={require('../../assets/learn-aid-text-logo.png')}
-                  style={{width: '50%', height: '50%'}}
-                  alt="icon.png"
-                />
-              </Box>
-              <Button
-                width={'30%'}
-                size={10}
-                background={'black'}
-                onPress={() => {
-                  setSettingsModalVisible(!settingsModalVisible);
-                }}
-                justifyContent={'center'}
-                alignItems={'center'}>
-                <Center>
-                  <Text fontSize={'25px'} bold color={'white'}>
-                    Cerrar
-                  </Text>
-                </Center>
-              </Button>
-              <Text fontSize={'25px'} textAlign={'center'} bold color={'black'}>
-                Tamaño del texto
-              </Text>
-              <HStack>
-                <Button
-                  width={'30%'}
-                  height={'100%'}
-                  background={'black'}
-                  onPress={() => {
-                    tamañoTexto >= 25
-                      ? setTamañoTexto(tamañoTexto - 1)
-                      : Alert.alert('la letra no puede achicarse mas');
-                  }}>
-                  <Center>
-                    <Text color={'white'} fontSize={19}>
-                      Achicar
-                    </Text>
-                  </Center>
-                </Button>
-                <Box
-                  style={{
-                    width: '40%',
-                    height: '100%',
-                    backgroundColor: 'white',
-                  }}>
-                  <Text
-                    fontSize={tamañoTexto + 'px'}
-                    textAlign={'center'}
-                    bold
-                    color={'black'}>
-                    A
-                  </Text>
-                </Box>
-                <Button
-                  width={'30%'}
-                  height={'100%'}
-                  background={'black'}
-                  onPress={() => {
-                    tamañoTexto <= 45
-                      ? setTamañoTexto(tamañoTexto + 1)
-                      : Alert.alert('la letra no puede aumentarse mas');
-                  }}>
-                  <Center>
-                    <Text
-                      color={'white'}
-                      fontFamily={'notoserif'}
-                      fontSize={19}>
-                      Aumentar
-                    </Text>
-                  </Center>
-                </Button>
-              </HStack>
-              <Text fontSize={'25px'} textAlign={'center'} bold color={'black'}>
-                Velocidad de reproducción
-              </Text>
-              <HStack>
-                <Button
-                  width={'30%'}
-                  height={'100%'}
-                  background={'black'}
-                  onPress={() => {
-                    tamañoTexto >= 25
-                      ? setTamañoTexto(tamañoTexto - 1)
-                      : Alert.alert('la letra no puede achicarse mas');
-                  }}>
-                  <Center>
-                    <Text color={'white'} fontSize={19}>
-                      Achicar
-                    </Text>
-                  </Center>
-                </Button>
-                <Box
-                  style={{
-                    width: '40%',
-                    height: '100%',
-                    backgroundColor: 'white',
-                  }}>
-                  <Text
-                    fontSize={tamañoTexto + 'px'}
-                    textAlign={'center'}
-                    bold
-                    color={'black'}>
-                    A
-                  </Text>
-                </Box>
-                <Button
-                  width={'30%'}
-                  height={'100%'}
-                  background={'black'}
-                  onPress={() => {
-                    tamañoTexto <= 45
-                      ? setTamañoTexto(tamañoTexto + 1)
-                      : Alert.alert('la letra no puede aumentarse mas');
-                  }}>
-                  <Center>
-                    <Text
-                      color={'white'}
-                      fontFamily={'notoserif'}
-                      fontSize={19}>
-                      Aumentar
-                    </Text>
-                  </Center>
-                </Button>
-              </HStack>
-            </VStack>
-          </ImageBackground>
-        </View>
-      </Modal>
-      {/*MODAL CAMARA*/}
-      
-      <Modal visible={cameraOpen}>
-        <VStack style={{flex: 1}}>
-          {!image ? (
-            <Camera
-              style={styles.camera}
-              type={type}
-              flashMode={flash}
-              ref={cameraRef}></Camera>
-          ) : (
-            <Image
-              source={{uri: image.uri}}
-              style={styles.camera}
-              alt="image.jpg"
-            />
-          )}
+                    source={require("../../assets/background.png")}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                    }}
+                    alt="icon.png"
+                >
+                    <VStack
+                        style={{
+                            flex: 1,
+                            padding: 10,
+                            paddingLeft: "5%",
+                        }}
+                        space={5}
+                    >
+                        <ScrollView
+                            contentContainerStyle={{ flexGrow: 2 }}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <Card
+                                style={{
+                                    borderRadius: 0,
+                                    height: "100%",
+                                    width:'100%',
+                                    shadowColor:'white'
+                                }}
+                            >
+                                <Text
+                                    fontSize={tamañoTexto + "px"}
+                                    textAlign={"justify"}
+                                    bold
+                                    color={"black"}
+                                    p={0}
+                                >
+                                    {(internalLoading) ?  'Cargando...' : dataText}
+                                </Text>
+                            </Card>
+                        </ScrollView>
+                        <HStack
+                            justifyContent={"center"}
+                            space={"10%"}
+                            height={"20%"}
+                            p={"5%"}
+                            paddingBottom={"10%"}
+                        >
+                            <Button
+                                width={"30%"}
+                                height={"100%"}
+                                style={{
+                                    bottom: "-15%",
+                                    right: "-2.5%",
+                                    backgroundColor: "orange",
+                                }}
+                                onPress={() => {
+                                    setSettingsModalVisible(true);
+                                }}
+                            >
+                                <Center>
+                                    <Image
+                                        source={require("../../assets/settingsIcon.png")}
+                                        style={{
+                                            width: "100%",
+                                            height: "65%",
+                                        }}
+                                        alt="icon.png"
+                                    />
+                                    <Text color={"black"}>Ajustes</Text>
+                                </Center>
+                            </Button>
+                            <Button
+                                width={"30%"}
+                                height={"100%"}
+                                style={{ backgroundColor: "lightblue" }}
+                                onPress={() => handleCameraOpen()}
+                            >
+                                <Center>
+                                    <Image
+                                        source={require("../../assets/cameraIcon.png")}
+                                        style={{
+                                            width: "100%",
+                                            height: "63%",
+                                        }}
+                                        alt="icon.png"
+                                    />
+                                    <Text color={"black"} fontSize={15}>
+                                        Cámara
+                                    </Text>
+                                </Center>
+                            </Button>
+                            <Button
+                                width={"30%"}
+                                height={"100%"}
+                                style={{
+                                    bottom: "-15%",
+                                    left: "-2.5%",
+                                    backgroundColor: "orange",
+                                }}
+                                shadow={20}
+                            >
+                                <Center>
+                                    <Image
+                                        source={require("../../assets/addIcon.png")}
+                                        style={{
+                                            width: "80%",
+                                            height: "60%",
+                                        }}
+                                        alt="icon.png"
+                                    />
+                                    <Text color={"black"} fontSize={"15px"}>
+                                        Agregar
+                                    </Text>
+                                </Center>
+                            </Button>
+                        </HStack>
+                        <HStack space={5}>
+                            <Button
+                                width={"30%"}
+                                height={"100%"}
+                                background={"white"}
+                                onPress={() => {
+                                    ("");
+                                }}
+                            >
+                                <Center>
+                                    <Text color={"black"} fontSize={17}>
+                                        Atrasar
+                                    </Text>
+                                </Center>
+                            </Button>
+                            <Button
+                                width={"30%"}
+                                height={"100%"}
+                                background={"black"}
+                                onPress={() => handleReproducir()}
+                            >
+                                <Center>
+                                    <Text color={"white"} fontSize={17}>
+                                        {!play ? "Reproducir" : "Pausar"}
+                                    </Text>
+                                </Center>
+                            </Button>
+                            <Button
+                                width={"30%"}
+                                height={"100%"}
+                                background={"white"}
+                                onPress={() => {}}
+                            >
+                                <Center>
+                                    <Text color={"black"} fontSize={17}>
+                                        Adelantar
+                                    </Text>
+                                </Center>
+                            </Button>
+                        </HStack>
+                    </VStack>
+                </ImageBackground>
+            </View>
+            {/*MODAL SETTINGS*/}
+            <Modal visible={settingsModalVisible}>
+                <View style={{ flex: 1 }}>
+                    <ImageBackground
+                        source={require("../../assets/background.png")}
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                        }}
+                        alt="icon.png"
+                    >
+                        <VStack
+                            style={{
+                                flex: 1,
+                                padding: 10,
+                                paddingLeft: "5%",
+                            }}
+                            space={5}
+                        >
+                            <Box
+                                style={{
+                                    width: "100%",
+                                    height: "10%",
+                                }}
+                            >
+                                <ImageBackground
+                                    source={require("../../assets/learn-aid-text-logo.png")}
+                                    style={{ width: "50%", height: "50%" }}
+                                    alt="icon.png"
+                                />
+                            </Box>
+                            <Button
+                                width={"30%"}
+                                size={10}
+                                background={"black"}
+                                onPress={() => {
+                                    setSettingsModalVisible(
+                                        !settingsModalVisible
+                                    );
+                                }}
+                                justifyContent={"center"}
+                                alignItems={"center"}
+                            >
+                                <Center>
+                                    <Text
+                                        fontSize={"25px"}
+                                        bold
+                                        color={"white"}
+                                    >
+                                        Cerrar
+                                    </Text>
+                                </Center>
+                            </Button>
+                            <Text
+                                fontSize={"25px"}
+                                textAlign={"center"}
+                                bold
+                                color={"black"}
+                            >
+                                Tamaño del texto
+                            </Text>
+                            <HStack>
+                                <Button
+                                    width={"30%"}
+                                    height={"100%"}
+                                    background={"black"}
+                                    onPress={() => {
+                                        tamañoTexto >= 25
+                                            ? setTamañoTexto(tamañoTexto - 1)
+                                            : Alert.alert(
+                                                  "la letra no puede achicarse mas"
+                                              );
+                                    }}
+                                >
+                                    <Center>
+                                        <Text color={"white"} fontSize={19}>
+                                            Achicar
+                                        </Text>
+                                    </Center>
+                                </Button>
+                                <Box
+                                    style={{
+                                        width: "40%",
+                                        height: "100%",
+                                        backgroundColor: "white",
+                                    }}
+                                >
+                                    <Text
+                                        fontSize={tamañoTexto + "px"}
+                                        textAlign={"center"}
+                                        bold
+                                        color={"black"}
+                                    >
+                                        A
+                                    </Text>
+                                </Box>
+                                <Button
+                                    width={"30%"}
+                                    height={"100%"}
+                                    background={"black"}
+                                    onPress={() => {
+                                        tamañoTexto <= 45
+                                            ? setTamañoTexto(tamañoTexto + 1)
+                                            : Alert.alert(
+                                                  "la letra no puede aumentarse mas"
+                                              );
+                                    }}
+                                >
+                                    <Center>
+                                        <Text
+                                            color={"white"}
+                                            fontFamily={"notoserif"}
+                                            fontSize={19}
+                                        >
+                                            Aumentar
+                                        </Text>
+                                    </Center>
+                                </Button>
+                            </HStack>
+                            <Text
+                                fontSize={"25px"}
+                                textAlign={"center"}
+                                bold
+                                color={"black"}
+                            >
+                                Velocidad de reproducción
+                            </Text>
+                            <HStack>
+                                <Button
+                                    width={"30%"}
+                                    height={"100%"}
+                                    background={"black"}
+                                    onPress={() => {
+                                        tamañoTexto >= 25
+                                            ? setTamañoTexto(tamañoTexto - 1)
+                                            : Alert.alert(
+                                                  "la letra no puede achicarse mas"
+                                              );
+                                    }}
+                                >
+                                    <Center>
+                                        <Text color={"white"} fontSize={19}>
+                                            Achicar
+                                        </Text>
+                                    </Center>
+                                </Button>
+                                <Box
+                                    style={{
+                                        width: "40%",
+                                        height: "100%",
+                                        backgroundColor: "white",
+                                    }}
+                                >
+                                    <Text
+                                        fontSize={tamañoTexto + "px"}
+                                        textAlign={"center"}
+                                        bold
+                                        color={"black"}
+                                    >
+                                        A
+                                    </Text>
+                                </Box>
+                                <Button
+                                    width={"30%"}
+                                    height={"100%"}
+                                    background={"black"}
+                                    onPress={() => {
+                                        tamañoTexto <= 45
+                                            ? setTamañoTexto(tamañoTexto + 1)
+                                            : Alert.alert(
+                                                  "la letra no puede aumentarse mas"
+                                              );
+                                    }}
+                                >
+                                    <Center>
+                                        <Text
+                                            color={"white"}
+                                            fontFamily={"notoserif"}
+                                            fontSize={19}
+                                        >
+                                            Aumentar
+                                        </Text>
+                                    </Center>
+                                </Button>
+                            </HStack>
+                        </VStack>
+                    </ImageBackground>
+                </View>
+            </Modal>
+            {/*MODAL CAMARA*/}
 
-          {image ? (
-            <HStack height={'10%'}>
-              <Button
-                height={'100%'}
-                width={'50%'}
-                onPress={() => setImage(null)}
-                style={{backgroundColor: 'red'}}>
-                TOMAR DE NUEVO
-              </Button>
-              <Button
-                height={'100%'}
-                width={'50%'}
-                onPress={() => {
-                  handleSendImage(image);
-                  setCameraOpen(!cameraOpen);
-                }}
-                style={{backgroundColor: 'green'}}>
-                CONSERVAR
-              </Button>
-            </HStack>
-          ) : (
-            <Button
-              height={'10%'}
-              width={'100%'}
-              onPress={takePicture}
-              backgroundColor={'black'}>
-              !TOCA PARA CAPTURAR!
-            </Button>
-          )}
-        </VStack>
-      </Modal>
-    </>
-  );
+            <Modal visible={cameraOpen}>
+                <VStack style={{ flex: 1 }}>
+                    {!image ? (
+                        <Camera
+                            style={styles.camera}
+                            type={type}
+                            flashMode={flash}
+                            ref={cameraRef}
+                        ></Camera>
+                    ) : (
+                        <Image
+                            source={{ uri: image.uri }}
+                            style={styles.camera}
+                            alt="image.jpg"
+                        />
+                    )}
+
+                    {image ? (
+                        <HStack height={"10%"}>
+                            <Button
+                                height={"100%"}
+                                width={"50%"}
+                                onPress={() => setImage(null)}
+                                style={{ backgroundColor: "red" }}
+                            >
+                                TOMAR DE NUEVO
+                            </Button>
+                            <Button
+                                height={"100%"}
+                                width={"50%"}
+                                onPress={() => {
+                                    handleSendImage(image);
+                                    setCameraOpen(!cameraOpen);
+                                }}
+                                style={{ backgroundColor: "green" }}
+                            >
+                                CONSERVAR
+                            </Button>
+                        </HStack>
+                    ) : (
+                        <Button
+                            height={"10%"}
+                            width={"100%"}
+                            onPress={takePicture}
+                            backgroundColor={"black"}
+                        >
+                            !TOCA PARA CAPTURAR!
+                        </Button>
+                    )}
+                </VStack>
+            </Modal>
+        </>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    background: '#fff',
-    justifyContent: 'center',
-  },
-  camera: {
-    flex: 1,
-    borderRadius: 5,
-  },
+    container: {
+        flex: 1,
+        background: "#fff",
+        justifyContent: "center",
+    },
+    camera: {
+        flex: 1,
+        borderRadius: 5,
+    },
 });
